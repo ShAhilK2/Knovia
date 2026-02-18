@@ -13,6 +13,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { shadcn } from "@clerk/themes";
 import Header from "@/components/header";
 import Headerwrapper from "@/components/header-wrapper";
+import Footer from "@/components/footer";
 
 const outfitFont = Outfit({
   subsets: ["latin"],
@@ -47,6 +48,7 @@ export default function RootLayout({
           >
             <Headerwrapper />
             {children}
+            <Footer />
           </ThemeProvider>
         </body>
       </html>
