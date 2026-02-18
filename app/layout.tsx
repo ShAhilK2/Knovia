@@ -9,11 +9,12 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/nextjs";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "@/components/provider/theme-provider";
 import { shadcn } from "@clerk/themes";
 import Header from "@/components/header";
 import Headerwrapper from "@/components/header-wrapper";
 import Footer from "@/components/footer";
+import QueryProvider from "@/components/provider/query-provider";
 
 const outfitFont = Outfit({
   subsets: ["latin"],
@@ -46,9 +47,11 @@ export default function RootLayout({
             disableTransitionOnChange
             storageKey="knovia-theme"
           >
-            <Headerwrapper />
-            {children}
-            <Footer />
+            <QueryProvider>
+              <Headerwrapper />
+              {children}
+              <Footer />
+            </QueryProvider>
           </ThemeProvider>
         </body>
       </html>
