@@ -8,11 +8,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { client } from "@/lib/app-client";
+import { useCommunities } from "@/hooks/use-communties";
 import { useUser } from "@clerk/nextjs";
-import { useQuery } from "@tanstack/react-query";
-import { MessageCircleIcon, UserIcon, UsersIcon } from "lucide-react";
-import { ReactJsxRuntime } from "next/dist/server/route-modules/app-page/vendored/rsc/entrypoints";
+import { MessageCircleIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 
 const page = () => {
@@ -21,15 +19,8 @@ const page = () => {
     data: userCommunities,
     isLoading: isCommunitiesLoading,
     error: communitiesError,
-  } = useQuery({
-    queryKey: ["communities"],
-    queryFn: async () => {
-      const response = await client.api.communities.$get();
-      return response.json();
-    },
-  });
+  } = useCommunities();
 
-  console.log(userCommunities);
   if (isCommunitiesLoading) {
     return <div>Loading...</div>;
   }
