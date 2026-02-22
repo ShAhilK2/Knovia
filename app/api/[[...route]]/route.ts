@@ -5,7 +5,9 @@ import { Hono } from "hono";
 import { handle } from "hono/vercel";
 import { HTTPException } from "hono/http-exception";
 import { eq } from "drizzle-orm";
-import { communitiesApp } from "@/server/route";
+import { communitiesApp } from "@/server/community-routes";
+import AddLearningGoal from "@/components/communities/add-learning";
+import learningGoalApp from "@/server/learning-goals";
 
 type Variables = {
   userId: string;
@@ -62,7 +64,9 @@ app.use("/*", async (c, next) => {
   return await next();
 });
 
-const route = app.route("/communities", communitiesApp);
+const route = app
+  .route("/communities", communitiesApp)
+  .route("/communities", learningGoalApp);
 
 export type AppType = typeof route;
 
