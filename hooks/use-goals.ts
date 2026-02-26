@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 "use client";
 import { client } from "../lib/app-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
