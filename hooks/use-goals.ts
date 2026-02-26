@@ -18,6 +18,7 @@ export const useCreateLeaningMutationGoal = () => {
         param: {
           communityId: goal.communityId,
         },
+        // @ts-expect-error - json is not defined in the API client types
         json: {
           title: goal.title,
           description: goal.description,
