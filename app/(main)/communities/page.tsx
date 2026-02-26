@@ -1,4 +1,5 @@
 "use client";
+
 import AddLearningGoal from "@/components/communities/add-learning";
 import AIMatching from "@/components/communities/ai-matching";
 import { Button } from "@/components/ui/button";
@@ -9,30 +10,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  useAllCommunities,
-  useCommunities,
-  useCommunityGoals,
-} from "@/hooks/use-communties";
-import { BotIcon } from "lucide-react";
+import { useCommunities, useCommunityGoals } from "@/hooks/use-communties";
+
+import { useCurrentUser } from "@/hooks/use-users";
+import { BotIcon, LockIcon } from "lucide-react";
 import { startTransition, useEffect, useState } from "react";
 
-const page = () => {
+export default function CommunitiesPage() {
+  const [activeTab, setActiveTab] = useState<"goals" | "matches">("goals");
   const [selectedCommunity, setSelectedCommunity] = useState<string | null>(
     null,
   );
-
-  const [activeTab, setActiveTab] = useState<"goal" | "matches">("goal");
   const {
     data: communities,
-    isLoading: communitiesLoading,
-    error: communitiesError,
+    isLoading: isLoadingCommunities,
+    error: errorCommunities,
   } = useCommunities();
 
   const {
     data: communityGoals,
-    isLoading: communityGoalsLoading,
-    error: communityGoalsError,
+    isLoading: isLoadingCommunityGoals,
+    error: errorCommunityGoals,
   } = useCommunityGoals(selectedCommunity);
 
   useEffect(() => {
@@ -41,32 +39,38 @@ const page = () => {
         setSelectedCommunity(communities[0].community.id);
       });
     }
-  }, [communities]);
+  }, [communities?.length]);
 
-  if (communitiesLoading) {
-    return <div>Loading...</div>;
-  }
+  const numberOfCommunities = communities?.length || 0;
 
-  if (communitiesError) {
-    return <div>Error: {communitiesError.message}</div>;
-  }
+  const { data: user } = useCurrentUser();
+  const isPro = user?.isPro;
+
+  const showLockIcon = numberOfCommunities >= 3 && !isPro;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid gap-6 lg:grid-cols-3">
       <Card className="lg:col-span-1">
         <CardHeader>
-          <CardTitle>Community Name</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            {showLockIcon && (
+              <LockIcon className="size-4 text-muted-foreground" />
+            )}{" "}
+            Communities
+          </CardTitle>
           <CardDescription>{communities?.length} joined</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           {communities?.map((c) => (
             <Button
-              key={c.id}
-              className="justify-start w-full"
+              key={c.community.id}
+              className="w-full justify-start"
+              onClick={() => {
+                setSelectedCommunity(c.community.id);
+              }}
               variant={
                 selectedCommunity === c.community.id ? "default" : "outline"
               }
-              onClick={() => setSelectedCommunity(c.community.id)}
             >
               {c.community.name}
             </Button>
@@ -74,59 +78,60 @@ const page = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="lg:col-span-2">
         <CardHeader>
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex gap-2 mb-4">
             <Button
-              key="goal"
-              variant={activeTab === "goal" ? "default" : "outline"}
-              onClick={() => setActiveTab("goal")}
+              onClick={() => setActiveTab("goals")}
+              variant={activeTab === "goals" ? "default" : "outline"}
             >
-              Goal
+              My Goals
             </Button>
             <Button
-              key="matches"
-              variant={activeTab === "matches" ? "default" : "outline"}
               onClick={() => setActiveTab("matches")}
+              variant={activeTab === "matches" ? "default" : "outline"}
             >
-              <BotIcon className="size-4" />
               Find Partners with AI
             </Button>
           </div>
           <CardTitle>
-            {activeTab === "goal"
+            {activeTab === "goals"
               ? "Learning Goals"
               : "Potential Learning Partners"}
           </CardTitle>
-
           <CardDescription>
-            {activeTab === "goal"
-              ? `${communityGoals?.length} ${communityGoals?.length === 1 ? "goal" : "goals"} in selected community`
+            {activeTab === "goals"
+              ? `${communityGoals?.length} ${
+                  communityGoals?.length === 1 ? "goal" : "goals"
+                } in selected community`
               : "Members with similar learning goals"}
           </CardDescription>
         </CardHeader>
-
         <CardContent>
-          {activeTab === "goal" ? (
-            <div className="space-y-4">
-              {communityGoals?.map((goal) => (
-                <Card key={goal.id}>
+          {activeTab === "goals" ? (
+            <div className="space-y-2">
+              {communityGoals?.map((c) => (
+                <Card key={c.id} className="shadow-none">
                   <CardHeader>
-                    <CardTitle className="text-base">{goal.title}</CardTitle>
-                    <CardDescription>{goal.description}</CardDescription>
+                    <CardTitle className="text-base">{c.title}</CardTitle>
+                    <CardDescription>{c.description}</CardDescription>
                   </CardHeader>
                 </Card>
               ))}
-
-              <AddLearningGoal selectedCommunityId={selectedCommunity!} />
+              <AddLearningGoal
+                selectedCommunityId={selectedCommunity!}
+                showLockIcon={showLockIcon}
+              />
             </div>
           ) : (
-            <AIMatching totalGoals={communityGoals?.length || 0} />
+            <AIMatching
+              totalGoals={communityGoals?.length || 0}
+              selectedCommunityId={selectedCommunity!}
+              showLockIcon={showLockIcon}
+            />
           )}
         </CardContent>
       </Card>
     </div>
   );
-};
-
-export default page;
+}

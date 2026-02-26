@@ -8,6 +8,9 @@ import { eq } from "drizzle-orm";
 import { communitiesApp } from "@/server/community-routes";
 import AddLearningGoal from "@/components/communities/add-learning";
 import learningGoalApp from "@/server/learning-goals";
+import { matchesApp } from "@/server/matches-routes";
+import { userApp } from "@/server/users-routes";
+import { conversationsApp } from "@/server/conversations-routes";
 
 type Variables = {
   userId: string;
@@ -17,7 +20,6 @@ const app = new Hono<{ Variables: Variables }>().basePath("/api");
 // Error handles
 
 app.onError((err, c) => {
-  console.log("API Error : ", err);
 
   if (err instanceof HTTPException) {
     return err.getResponse();
@@ -66,7 +68,10 @@ app.use("/*", async (c, next) => {
 
 const route = app
   .route("/communities", communitiesApp)
-  .route("/communities", learningGoalApp);
+  .route("/communities", learningGoalApp)
+  .route("/matches", matchesApp)
+  .route("/conversations", conversationsApp)
+  .route("/user", userApp);
 
 export type AppType = typeof route;
 

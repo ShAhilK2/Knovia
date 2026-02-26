@@ -8,103 +8,186 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useCommunities } from "@/hooks/use-communties";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { useMatches } from "@/hooks/use-ai-partners";
+import { client } from "@/lib/app-client";
+
 import { useUser } from "@clerk/nextjs";
+import { useQuery } from "@tanstack/react-query";
 import { MessageCircleIcon, UsersIcon } from "lucide-react";
 import Link from "next/link";
 
-const page = () => {
-  const { user } = useUser();
+export default function DashboardPage() {
+  const user = useUser();
   const {
     data: userCommunities,
-    isLoading: isCommunitiesLoading,
-    error: communitiesError,
-  } = useCommunities();
+    isLoading: isLoadingUserCommunities,
+    error: errorUserCommunities,
+  } = useQuery({
+    queryKey: ["communities"],
+    queryFn: async () => {
+      const res = await client.api.communities.$get();
+      if (!res.ok) {
+        throw new Error("Failed to fetch communities");
+      }
+      return res.json();
+    },
+  });
 
-  if (isCommunitiesLoading) {
-    return <div>Loading...</div>;
-  }
+  const { data: allMatches } = useQuery({
+    queryKey: ["allMatches"],
+    queryFn: async () => {
+      const res = await client.api.matches["allmatches"].$get();
+      if (!res.ok) {
+        throw new Error("Failed to fetch pending matches");
+      }
+      return res.json();
+    },
+  });
 
-  if (communitiesError) {
-    return <div>Error:{communitiesError.message}</div>;
-  }
+  const pendingMatchesData = allMatches?.filter(
+    (match) => match.status === "pending",
+  );
+  const activeMatchesData = allMatches?.filter(
+    (match) => match.status === "accepted",
+  );
 
-  const pendingMatches: number = 6;
+  const { data: learningGoals } = useQuery({
+    queryKey: ["communityGoals"],
+    queryFn: async () => {
+      const res = await client.api.communities.goals.$get();
+      if (!res.ok) {
+        throw new Error("Failed to fetch learning goals");
+      }
+      return res.json();
+    },
+    enabled: !!userCommunities?.length,
+  });
+
+  const {
+    data: matches,
+    isLoading: isLoadingMatches,
+    error: errorMatches,
+  } = useMatches();
+
+  if (isLoadingUserCommunities) return <div>Loading...</div>;
+  if (errorUserCommunities)
+    return <div>Error: {errorUserCommunities.message}</div>;
 
   return (
     <div className="page-wrapper">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome Back,{user?.firstName || "User"} !
+          Welcome back, {user?.user?.firstName || "User"}!
         </p>
       </div>
 
       <Card className="border-primary">
         <CardHeader>
           <CardTitle>
-            🚀 You have {pendingMatches} new{" "}
-            {pendingMatches === 1 ? "match" : "matches"}
+            🎉 You have {pendingMatchesData?.length} new{" "}
+            {pendingMatchesData?.length === 1 ? "match" : "matches"}!
           </CardTitle>
           <CardDescription>
-            Review and accept ypur matches to start chatting
+            Review and accept your matches to start chatting
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           <Link href="/chat">
             <Button>Review Matches</Button>
           </Link>
         </CardContent>
       </Card>
+
       <div className="grid gap-4 md:grid-cols-4">
         <StatsCard
-          title="Total Communities"
+          title="Your Communities"
           value={userCommunities?.length || 0}
         />
-        <StatsCard title="Learning Goals" value={6} />
-        <StatsCard title="Active Matches" value={6} />
-        <StatsCard title="Pending Matches" value={pendingMatches} />
+        <StatsCard title="Learning Goals" value={learningGoals?.length || 0} />
+        <StatsCard
+          title="Active Matches"
+          value={activeMatchesData?.length || 0}
+        />
+        <StatsCard
+          title="Pending Matches"
+          value={pendingMatchesData?.length || 0}
+        />
       </div>
-      <div className="grid gap-6  lg:grid-cols-2 ">
+
+      <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center ">
-                <MessageCircleIcon className="size-4 text-primary mr-2" />{" "}
-                Recent chats
+              <CardTitle className="flex items-center">
+                <MessageCircleIcon className="size-4 mr-2 text-primary" />
+                Recent Chats
               </CardTitle>
-              <Link href={"/communities"}>
-                <Button variant={"outline"} size={"sm"}>
-                  <UsersIcon className="size-4 text-primary" />
-                  View all
+              <Link href="/chat">
+                <Button variant="outline" size="sm">
+                  <UsersIcon className="size-4 mr-2 text-primary" />
+                  View All
                 </Button>
               </Link>
             </div>
-
-            <CardDescription>Communities you&apos;re part of</CardDescription>
+            <CardDescription>Conversations you&apos;re part of</CardDescription>
           </CardHeader>
+
+          <CardContent>
+            <div className="flex flex-col gap-3">
+              {matches?.map((match) => (
+                <Link href={`/chat/${match.id}`} key={match.id}>
+                  <Card className="shadow-none">
+                    <CardHeader>
+                      <div className="flex items-center gap-4">
+                        <UserAvatar
+                          name={match.partner.name}
+                          imageUrl={match.partner.imageUrl ?? undefined}
+                          size="sm"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="font-medium">
+                            {match.partner.name}
+                          </CardTitle>
+                          <CardDescription className="text-xs text-muted-foreground mt-1">
+                            <span>
+                              {match.userGoals.map((g) => g.title).join(", ")}
+                            </span>
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
         </Card>
+
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center ">
-                <UsersIcon className="size-4 text-primary mr-2" /> Communities
+              <CardTitle className="flex items-center">
+                <UsersIcon className="size-4 mr-2 text-primary" />
+                Communities
               </CardTitle>
-              <Link href={"/communities"}>
-                <Button variant={"outline"} size={"sm"}>
-                  <UsersIcon className="size-4 text-primary" />
+              <Link href="/communities">
+                <Button variant="outline" size="sm">
+                  <UsersIcon className="size-4 mr-2 text-primary" />
                   Manage
                 </Button>
               </Link>
             </div>
-
             <CardDescription>Communities you&apos;re part of</CardDescription>
           </CardHeader>
+
           <CardContent>
-            <div className="space-x-3">
-              {userCommunities?.map((community: any) => (
-                <Link key={community.id} href={`/communities/${community.id}`}>
-                  <Card className="shadow-none">
+            <div className="space-y-3">
+              {userCommunities?.map((community) => (
+                <Card className="shadow-none" key={community.id}>
+                  <Link href={`/communities/${community.id}`}>
                     <CardHeader>
                       <CardTitle className="text-sm">
                         {community.community.name}
@@ -113,8 +196,8 @@ const page = () => {
                         {community.community.description}
                       </CardDescription>
                     </CardHeader>
-                  </Card>
-                </Link>
+                  </Link>
+                </Card>
               ))}
             </div>
           </CardContent>
@@ -122,6 +205,4 @@ const page = () => {
       </div>
     </div>
   );
-};
-
-export default page;
+}

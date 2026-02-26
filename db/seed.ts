@@ -504,16 +504,9 @@ const proUserGoalAssignments = {
 };
 
 async function comprehensiveSeed() {
-  console.log("🌱 Starting comprehensive database seed...\n");
-  console.log("═══════════════════════════════════════════════════════");
-  console.log("SEED DATA STRUCTURE:");
-  console.log("• 5 FREE USERS (1 community, 1 goal each)");
-  console.log("• 10 PRO USERS (multiple communities, multiple goals)");
-  console.log("═══════════════════════════════════════════════════════\n");
 
   try {
     // 0. Clear existing data
-    console.log("🗑️  Clearing existing database data...");
     await db.delete(conversationSummaries);
     await db.delete(messages);
     await db.delete(conversations);
@@ -522,29 +515,23 @@ async function comprehensiveSeed() {
     await db.delete(communityMembers);
     await db.delete(communities);
     await db.delete(users);
-    console.log("   ✓ Database cleared\n");
     // 1. Create FREE users
-    console.log("👥 Creating FREE USERS (demonstrating tier limits)...");
     const createdFreeUsers: any[] = [];
     for (const user of freeUsers) {
       const [created] = await db.insert(users).values(user).returning();
       createdFreeUsers.push(created);
-      console.log(`   ✓ ${user.name} (FREE - 1 community, 1 goal)`);
     }
 
     // 2. Create PRO users
-    console.log("\n👥 Creating PRO USERS (unlimited access)...");
     const createdProUsers: any[] = [];
     for (const user of proUsers) {
       const [created] = await db.insert(users).values(user).returning();
       createdProUsers.push(created);
-      console.log(`   ✓ ${user.name} (PRO - unlimited)`);
     }
 
     const allUsers = [...createdFreeUsers, ...createdProUsers];
 
     // 3. Create communities
-    console.log("\n🏘️  Creating communities...");
     const createdCommunities: any[] = [];
     for (const community of communitiesData) {
       const [created] = await db
@@ -555,11 +542,9 @@ async function comprehensiveSeed() {
         })
         .returning();
       createdCommunities.push(created);
-      console.log(`   ✓ ${community.name}`);
     }
 
     // 4. Add FREE users to communities (1 community each)
-    console.log("\n🔗 Adding FREE USERS to communities (1 each)...");
     for (const [userName, assignment] of Object.entries(freeUserAssignments)) {
       const user = allUsers.find((u) => u.name === userName);
       const community = createdCommunities.find(
@@ -570,11 +555,9 @@ async function comprehensiveSeed() {
         userId: user.id,
         communityId: community.id,
       });
-      console.log(`   ✓ ${userName} → ${assignment.community}`);
     }
 
     // 5. Add PRO users to communities (multiple each)
-    console.log("\n🔗 Adding PRO USERS to communities (multiple each)...");
     for (const [userName, communityNames] of Object.entries(
       proUserCommunityAssignments,
     )) {
@@ -588,11 +571,9 @@ async function comprehensiveSeed() {
           communityId: community.id,
         });
       }
-      console.log(`   ✓ ${userName} → ${communityNames.length} communities`);
     }
 
     // 6. Create template learning goals for each community
-    console.log("\n📚 Creating template learning goals...");
     const createdGoals: any[] = [];
     for (const [communityName, goals] of Object.entries(learningGoalsData)) {
       const community = createdCommunities.find(
@@ -610,11 +591,9 @@ async function comprehensiveSeed() {
           .returning();
         createdGoals.push({ ...created, communityName });
       }
-      console.log(`   ✓ ${goals.length} goals for ${communityName}`);
     }
 
     // 7. Assign goals to FREE users (1 goal each)
-    console.log("\n🎯 Assigning goals to FREE USERS (1 goal each)...");
     for (const [userName, assignment] of Object.entries(freeUserAssignments)) {
       const user = allUsers.find((u) => u.name === userName);
       const community = createdCommunities.find(
@@ -633,11 +612,9 @@ async function comprehensiveSeed() {
         description: templateGoal.description,
         tags: templateGoal.tags || [],
       });
-      console.log(`   ✓ ${userName} → "${assignment.goal}"`);
     }
 
     // 8. Assign goals to PRO users (multiple goals each)
-    console.log("\n🎯 Assigning goals to PRO USERS (multiple goals each)...");
     for (const [userName, communities] of Object.entries(
       proUserGoalAssignments,
     )) {
@@ -666,11 +643,9 @@ async function comprehensiveSeed() {
           }
         }
       }
-      console.log(`   ✓ ${userName} → ${totalGoals} goals`);
     }
 
     // 9. Create matches (mostly between PRO users)
-    console.log("\n💫 Creating matches...");
     const matchPairs = [
       // PRO to PRO matches
       [
@@ -725,12 +700,10 @@ async function comprehensiveSeed() {
           })
           .returning();
         createdMatches.push({ ...match, user1Name: name1, user2Name: name2 });
-        console.log(`   ✓ ${name1} ↔ ${name2} (${status})`);
       }
     }
 
     // 10. Create conversations for accepted matches
-    console.log("\n💬 Creating conversations for accepted matches...");
     const acceptedMatches = createdMatches.filter(
       (m) => m.status === "accepted",
     );
@@ -751,13 +724,9 @@ async function comprehensiveSeed() {
         })
         .returning();
       createdConversations.push({ ...conversation, match });
-      console.log(
-        `   ✓ Conversation for ${match.user1Name} ↔ ${match.user2Name}`,
-      );
     }
 
     // 11. Create messages for conversations
-    console.log("\n📝 Creating messages for conversations...");
     const messageTemplates = [
       {
         sender: "user1",
@@ -808,12 +777,10 @@ async function comprehensiveSeed() {
         totalMessages++;
       }
     }
-    console.log(
       `   ✓ Created ${totalMessages} messages across ${createdConversations.length} conversations`,
     );
 
     // 12. Create conversation summaries for active conversations
-    console.log("\n📊 Creating conversation summaries...");
     const conversationsWithManyMessages = createdConversations.slice(
       0,
       Math.ceil(createdConversations.length / 2),
@@ -841,42 +808,16 @@ async function comprehensiveSeed() {
         ],
       });
     }
-    console.log(
       `   ✓ Created ${conversationsWithManyMessages.length} conversation summaries`,
     );
 
-    console.log("\n═══════════════════════════════════════════════════════");
-    console.log("✨ DATABASE SEEDING COMPLETED SUCCESSFULLY!");
-    console.log("═══════════════════════════════════════════════════════\n");
-    console.log("📊 SUMMARY:");
-    console.log(
       `   • ${createdFreeUsers.length} FREE USERS (1 community, 1 goal each)`,
     );
-    console.log(
       `   • ${createdProUsers.length} PRO USERS (multiple communities & goals)`,
     );
-    console.log(`   • ${createdCommunities.length} communities`);
-    console.log(`   • ${matchPairs.length} matches`);
-    console.log(`   • ${createdConversations.length} conversations`);
-    console.log(`   • ${totalMessages} messages`);
-    console.log(
       `   • ${conversationsWithManyMessages.length} conversation summaries`,
     );
-    console.log("\n💡 YOUR ACCOUNTS (PRO):");
-    console.log("   • itskulkarniankita@gmail.com");
-    console.log("   • kulkarni.ankita09@gmail.com");
-    console.log("\n💡 OTHER TEST ACCOUNTS:");
-    console.log("   • free1@email.com (FREE)");
-    console.log("   • emma.chen@email.com (PRO)\n");
-    console.log("🏘️  COMMUNITIES:");
-    console.log("   • Modern Full Stack Next.js Course");
-    console.log("   • Developer to Leader");
-    console.log("   • Ankita's Youtube Community");
-    console.log("   • Python for Data Science");
-    console.log("   • AI & Machine Learning");
-    console.log("   • Cloud & DevOps\n");
   } catch (error) {
-    console.error("\n❌ Error seeding database:", error);
     throw error;
   }
 }

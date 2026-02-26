@@ -3,39 +3,33 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
-import { ArrowLeft, CheckIcon } from "lucide-react";
+import { ArrowLeftIcon, CheckIcon, LockIcon } from "lucide-react";
 import Link from "next/link";
+
+import { toast } from "sonner";
+import { useCurrentUser } from "@/hooks/use-users";
 import {
   useAllCommunities,
   useCommunities,
   useJoinCommunity,
 } from "@/hooks/use-communties";
 
-import { toast } from "sonner";
-
-const page = () => {
+export default function AllCommunitiesPage() {
   const {
-    data: allCommunications,
-    isLoading: isLoadingAllCommunications,
-    error: allCommunicationsError,
+    data: allCommunities,
+    isLoading: isLoadingAllCommunities,
+    error: errorAllCommunities,
   } = useAllCommunities();
 
+  const { data: user } = useCurrentUser();
+  const isPro = user?.isPro;
+
   const { data: userCommunities } = useCommunities();
-  const joinCommunityMutation = useJoinCommunity();
-
-  if (isLoadingAllCommunications) {
-    return <div>Loading...</div>;
-  }
-
-  if (allCommunicationsError) {
-    return <div>Error: {allCommunicationsError.message}</div>;
-  }
-
-  console.log("userCommunities", userCommunities);
+  const numberOfCommunities = userCommunities?.length || 0;
 
   const isJoined = (communityId: string) => {
     return userCommunities?.some(
@@ -43,39 +37,47 @@ const page = () => {
     );
   };
 
+  const showLockIcon = numberOfCommunities >= 3 && !isPro;
+
+  const joinCommunityMutation = useJoinCommunity();
+
   const handleJoinCommunity = async (communityId: string) => {
     await joinCommunityMutation.mutateAsync(communityId);
     toast.success("Joined community successfully");
   };
 
+  if (isLoadingAllCommunities) return <div>Loading...</div>;
+  if (errorAllCommunities)
+    return <div>Error: {errorAllCommunities.message}</div>;
+
   return (
     <div>
       <Link href="/communities">
-        <Button variant="outline">
-          <ArrowLeft className="size-4" />
-          Back to Communities
+        <Button variant={"outline"}>
+          <ArrowLeftIcon className="size-4" />
+          Back to My Communities
         </Button>
       </Link>
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Browse Communities</h2>
-
+      <div className="space-y-4 mt-4">
+        <h2 className="text-2xl font-bold"> Browse Communities</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {allCommunications?.allCommunities?.map((community) => (
+          {allCommunities?.map((community) => (
             <Card key={community.id}>
               <CardHeader>
                 <CardTitle>{community.name}</CardTitle>
                 <CardDescription>{community.description}</CardDescription>
-                <CardFooter className="p-0 mt-4">
+                <CardFooter className="px-0 mt-2">
                   <Button
-                    className="w-full "
-                    disabled={isJoined(community.id)}
+                    className="w-full"
+                    disabled={isJoined(community.id) || showLockIcon}
                     onClick={() => handleJoinCommunity(community.id)}
                   >
-                    {/* {isJoined(community.id) */}
+                    {showLockIcon && (
+                      <LockIcon className="size-4 text-muted-foreground" />
+                    )}
                     {isJoined(community.id) ? (
                       <>
-                        <CheckIcon className="size-4" />
-                        Joined
+                        <CheckIcon className="size-4" /> Joined
                       </>
                     ) : (
                       "Join Community"
@@ -89,6 +91,4 @@ const page = () => {
       </div>
     </div>
   );
-};
-
-export default page;
+}

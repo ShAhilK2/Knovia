@@ -35,8 +35,8 @@ export const useCreateLeaningMutationGoal = () => {
         queryKey: ["communityGoals", variables.communityId],
       });
     },
-    onError: (error) => {
-      console.error("Failed to create goal:", error);
+    onError: () => {
+      // Handle error silently
     },
   });
 };

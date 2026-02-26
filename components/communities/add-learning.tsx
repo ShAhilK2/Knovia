@@ -1,5 +1,4 @@
-"use client";
-import { PlusIcon } from "lucide-react";
+import { LockIcon, PlusIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { useState } from "react";
 import { Textarea } from "../ui/textarea";
@@ -7,59 +6,56 @@ import { useCreateLeaningMutationGoal } from "@/hooks/use-goals";
 
 const AddLearningGoal = ({
   selectedCommunityId,
+  showLockIcon,
 }: {
   selectedCommunityId: string;
+  showLockIcon: boolean;
 }) => {
-  console.log("selectedCommunityId", selectedCommunityId);
-  const [showlearningform, setShowLearningForm] = useState(false);
-
-  const [goalText, setGoalText] = useState("");
-
+  const [showNewGoalForm, setShowNewGoalForm] = useState(false);
+  const [newGoalText, setNewGoalText] = useState("");
   const createGoalMutation = useCreateLeaningMutationGoal();
 
   const handleCreateGoal = async () => {
     try {
-      // mutation
       await createGoalMutation.mutateAsync({
         communityId: selectedCommunityId,
-        title: goalText.slice(0, 100),
-        description: goalText,
+        title: newGoalText.slice(0, 100),
+        description: newGoalText,
         tags: [],
       });
-
-      console.log("Creating goal:", goalText);
+      setNewGoalText("");
+      setShowNewGoalForm(false);
     } catch (error) {
-      console.error("Error creating goal:", error);
-    } finally {
-      setShowLearningForm(false);
-      setGoalText("");
     }
   };
 
   return (
     <div>
-      {showlearningform ? (
+      {showNewGoalForm ? (
         <div className="space-y-3 pt-3 border-t">
           <Textarea
-            placeholder="What do you want to learn ?"
-            value={goalText}
-            onChange={(e) => setGoalText(e.target.value)}
+            placeholder="What do you want to learn?"
+            value={newGoalText}
+            onChange={(e) => setNewGoalText(e.target.value)}
             rows={4}
             className="resize-none"
           />
-
           <div className="flex gap-2">
             <Button
-              size={"sm"}
-              disabled={createGoalMutation.isPending || goalText.length === 0}
-              onClick={() => handleCreateGoal()}
+              size="sm"
+              onClick={handleCreateGoal}
+              disabled={
+                createGoalMutation.isPending ||
+                newGoalText.length === 0 ||
+                showLockIcon
+              }
             >
               Add Goal
             </Button>
             <Button
+              size="sm"
               variant={"outline"}
-              size={"sm"}
-              onClick={() => setShowLearningForm(false)}
+              onClick={() => setShowNewGoalForm(false)}
             >
               Cancel
             </Button>
@@ -67,12 +63,15 @@ const AddLearningGoal = ({
         </div>
       ) : (
         <Button
-          className="w-full"
           variant={"outline"}
-          onClick={() => setShowLearningForm(true)}
+          className="w-full"
+          onClick={() => setShowNewGoalForm(true)}
+          disabled={showLockIcon}
         >
-          <PlusIcon className="size-3" />
-          Add Learning Goal
+          {showLockIcon && (
+            <LockIcon className="size-4 text-muted-foreground" />
+          )}
+          <PlusIcon className="size-3" /> Add Learning Goal
         </Button>
       )}
     </div>

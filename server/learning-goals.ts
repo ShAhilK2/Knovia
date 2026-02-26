@@ -5,6 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { Context, Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import z, { json, ZodType } from "zod";
+import { authMiddleware } from "./middleware/auth-middleware";
 
 type Variables = {
   userId: string;
@@ -34,15 +35,10 @@ const createGoalSchema = z.object({
 });
 
 const learningGoalApp = new Hono<{ Variables: Variables }>()
+  .use("/*", authMiddleware)
   .get("/:communityId/goals", async (c) => {
-    const clerkId = c.get("userId") as string;
-
+    const user = c.get("user");
     const communityId = c.req.param("communityId");
-
-    const user = await getOrCreateUserByClerkId(clerkId);
-    if (!user) {
-      throw new HTTPException(404, { message: "User not found" });
-    }
 
     const goals = await db
       .select()
@@ -57,12 +53,7 @@ const learningGoalApp = new Hono<{ Variables: Variables }>()
     return c.json(goals);
   })
   .post("/:communityId/goals", async (c) => {
-    const clerkId = c.get("userId") as string;
-    const user = await getOrCreateUserByClerkId(clerkId);
-
-    if (!user) {
-      throw new HTTPException(404, { message: "User not found" });
-    }
+    const user = c.get("user");
 
     const body = await validateBody(c, createGoalSchema);
 
@@ -77,6 +68,14 @@ const learningGoalApp = new Hono<{ Variables: Variables }>()
       })
       .returning();
 
+    return c.json(goals);
+  })
+  .get("/goals", async (c) => {
+    const user = c.get("user");
+    const goals = await db
+      .select()
+      .from(learningGoals)
+      .where(eq(learningGoals.userId, user.id));
     return c.json(goals);
   });
 

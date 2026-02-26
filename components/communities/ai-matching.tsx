@@ -1,6 +1,27 @@
+import { useAiPartners } from "@/hooks/use-ai-partners";
+import { LockIcon } from "lucide-react";
 import { Button } from "../ui/button";
+import { toast } from "sonner";
 
-const AIMatching = ({ totalGoals }: { totalGoals: number }) => {
+const AIMatching = ({
+  totalGoals,
+  selectedCommunityId,
+  showLockIcon,
+}: {
+  totalGoals: number;
+  selectedCommunityId: string;
+  showLockIcon: boolean;
+}) => {
+  const aiPartnerMutation = useAiPartners();
+
+  const handleAIPartner = async () => {
+    try {
+      await aiPartnerMutation.mutateAsync(selectedCommunityId);
+      toast.success("AI Partner found successfully");
+    } catch (error) {
+      toast.error("Failed to find AI Partner");
+    }
+  };
   return (
     <div className={`text-center py-8`}>
       <div className="mb-4">
@@ -11,7 +32,13 @@ const AIMatching = ({ totalGoals }: { totalGoals: number }) => {
           community.
         </p>
       </div>
-      <Button size={"lg"} className="mb-4" disabled={totalGoals === 0}>
+      <Button
+        size={"lg"}
+        className="mb-4"
+        disabled={totalGoals === 0 || showLockIcon}
+        onClick={handleAIPartner}
+      >
+        {showLockIcon && <LockIcon className="size-4 text-muted-foreground" />}
         🤖 Find Partners with AI
       </Button>
 

@@ -59,7 +59,6 @@ export const useJoinCommunity = () => {
       queryClient.invalidateQueries({ queryKey: ["communities"] });
     },
     onError: (error) => {
-      console.error("Error joining community", error);
     },
   });
 };
